@@ -25,7 +25,7 @@ Stop spending days on auth, billing, and project structure — start shipping yo
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/your-username/fastapi-saas-starter
+git clone https://github.com/thask8lo/fastapi-saas-starter
 cd fastapi-saas-starter
 pip install -r requirements.txt
 ```
