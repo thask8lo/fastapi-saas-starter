@@ -13,7 +13,7 @@ Stop spending days on auth, billing, and project structure — start shipping yo
 | **User Management** | Profile CRUD, password update, soft delete |
 | **Stripe Billing** | Checkout sessions, subscriptions, webhooks, cancellation |
 | **Rate Limiting** | Per-route limits to prevent abuse |
-| **Database** | SQLAlchemy ORM, SQLite out of the box, Postgres-ready |
+| **Database** | SQLAlchemy ORM + Alembic migrations, SQLite out of the box, Postgres-ready |
 | **Docker** | Dockerfile + docker-compose for instant deployment |
 | **Tests** | pytest test suite included |
 | **Type Safety** | Full Pydantic v2 schemas |
@@ -22,35 +22,40 @@ Stop spending days on auth, billing, and project structure — start shipping yo
 
 ## 🚀 Quick Start
 
-### 1. Clone & install
+### Windows (CMD)
 
-```bash
-git clone https://github.com/thask8lo/fastapi-saas-starter
-cd fastapi-saas-starter
+```cmd
+:: 1. Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate
+
+:: 2. Install dependencies
 pip install -r requirements.txt
-```
 
-### 2. Configure environment
+:: 3. Configure environment
+copy .env.example .env
 
-```bash
-cp .env.example .env
-# Edit .env with your values
-```
+:: 4. Run database migrations
+alembic upgrade head
 
-Generate a secret key:
-```bash
-openssl rand -hex 32
-```
-
-### 3. Run
-
-```bash
+:: 5. Start the server
 uvicorn app.main:app --reload
 ```
 
-API docs available at: `http://localhost:8000/docs`
+### macOS / Linux
 
-### 4. Run with Docker
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+API docs at: **http://localhost:8000/docs**
+
+### Docker
 
 ```bash
 docker-compose up --build
@@ -74,6 +79,7 @@ docker-compose up --build
 | GET | `/api/users/me` | Get current user |
 | PATCH | `/api/users/me` | Update profile |
 | DELETE | `/api/users/me` | Deactivate account |
+| GET | `/api/users/me/premium-data` | 🔒 Subscriber-only example |
 
 ### Billing
 | Method | Endpoint | Description |
@@ -85,20 +91,50 @@ docker-compose up --build
 
 ---
 
+## 🔒 Protecting Premium Routes
+
+Use `get_current_active_subscriber` to lock any endpoint behind a paid subscription.
+Returns `402 Payment Required` automatically if the user has no active plan.
+
+```python
+from app.core.security import get_current_active_subscriber
+
+@router.get("/my-premium-feature")
+def premium(current_user: User = Depends(get_current_active_subscriber)):
+    return {"data": "only for paying customers"}
+```
+
+---
+
 ## 💳 Stripe Setup
 
 1. Create a Stripe account at [stripe.com](https://stripe.com)
-2. Create a product and a recurring price
+2. Create a product with a recurring price
 3. Copy the Price ID (`price_...`) to your `.env`
 4. Set up a webhook pointing to `/api/billing/webhook`
-5. Copy the webhook secret to your `.env`
+5. Copy the webhook secret (`whsec_...`) to your `.env`
+
+---
+
+## 🗄️ Database Migrations (Alembic)
+
+```bash
+# Apply all migrations
+alembic upgrade head
+
+# Create a new migration after changing models
+alembic revision --autogenerate -m "add new field"
+
+# Rollback one step
+alembic downgrade -1
+```
 
 ---
 
 ## 🐘 Switch to PostgreSQL
 
 1. Uncomment the `db` service in `docker-compose.yml`
-2. Update `DATABASE_URL` in `.env`:
+2. Update `.env`:
 ```
 DATABASE_URL=postgresql://postgres:postgres@db:5432/saas_db
 ```
@@ -107,29 +143,37 @@ DATABASE_URL=postgresql://postgres:postgres@db:5432/saas_db
 
 ## 🧪 Run Tests
 
+```cmd
+:: Windows
+venv\Scripts\activate
+pytest tests/ -v
+```
+
 ```bash
+# macOS/Linux
 pytest tests/ -v
 ```
 
 ---
 
-## 🌐 Deploy to Render (Free)
+## 🌐 Deploy Free on Render
 
 1. Push to GitHub
-2. Create new Web Service on [render.com](https://render.com)
-3. Set environment variables
-4. Deploy — free tier available
+2. New Web Service on [render.com](https://render.com)
+3. Set env variables from `.env`
+4. Deploy — free tier included
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **FastAPI** 0.111 — modern async Python web framework
-- **SQLAlchemy** 2.0 — ORM with async support
+- **FastAPI** 0.111 — async Python web framework
+- **SQLAlchemy** 2.0 — ORM
+- **Alembic** — database migrations
 - **Pydantic** v2 — data validation
 - **python-jose** — JWT tokens
 - **passlib + bcrypt** — password hashing
-- **Stripe** — payments
+- **Stripe** — payments & subscriptions
 - **SlowAPI** — rate limiting
 - **pytest** — testing
 - **Docker** — containerization
@@ -142,4 +186,21 @@ MIT — use freely in personal and commercial projects.
 
 ---
 
-**Questions?** Open an issue or reach out via Gumroad.
+## 📦 Free vs Full Package
+
+This repository contains the **project structure, models, schemas, and configuration** as a preview.
+
+The following modules are available in the **full package only**:
+
+| Module | Free (GitHub) | Full Package |
+|---|---|---|
+| Project structure | ✅ | ✅ |
+| SQLAlchemy models | ✅ | ✅ |
+| Pydantic schemas | ✅ | ✅ |
+| Docker setup | ✅ | ✅ |
+| JWT Auth (full implementation) | Stub | ✅ |
+| Stripe billing (full implementation) | Stub | ✅ |
+| Alembic migrations | — | ✅ |
+| pytest suite | — | ✅ |
+
+👉 **Get the full package on [Gumroad](https://7538195787226.gumroad.com/l/cvdfl)**
